@@ -8,19 +8,18 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 
-# Load .env
 load_dotenv()
 WEB_URL = os.getenv("WEB_URL")
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH")
 
-# Ambil input tanggal dari user
+
 input_tanggal = input("📅 Masukkan tanggal (format: YYYY-MM-DD) [default: hari ini]: ").strip()
 if input_tanggal == "":
     input_tanggal = datetime.today().strftime("%Y-%m-%d")
 
-# Daftar bagian dan kode
+
 bagian_kode = {
     "cutting 2": 7,
     "tambah part": 125,
@@ -39,7 +38,7 @@ bagian_kode = {
     "polishing cvd": 122,
 }
 
-# Fungsi pembuat URL berdasarkan base path (loss/komponen)
+
 def generate_urls(base_path, tanggal):
     urls = {}
     for nama_bagian, kode in bagian_kode.items():
@@ -47,17 +46,17 @@ def generate_urls(base_path, tanggal):
         urls[nama_bagian] = url
     return urls
 
-# Generate URL untuk masing-masing jenis
+
 loss_urls = generate_urls("laporan/loss_bagian_cetak", input_tanggal)
 komponen_urls = generate_urls("+/komponen_cetak", input_tanggal)
 
-# Setup browser Chrome
+
 chrome_options = Options()
 chrome_options.add_argument("--start-maximized")
 service = Service(CHROMEDRIVER_PATH)
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
-# Fungsi login
+
 def login():
     print("🔐 Login ke sistem...")
     driver.get(WEB_URL)
@@ -68,12 +67,12 @@ def login():
     time.sleep(2)
     print("✅ Login berhasil.")
 
-# Ekstraksi data tabel
+
 def extract_table_data():
     try:
         table = driver.find_element(By.CSS_SELECTOR, "td.judul > table > tbody")
         rows = table.find_elements(By.TAG_NAME, "tr")
-        data_rows = rows[1:-1]  # Hindari header dan footer
+        data_rows = rows[1:-1]  
         data = []
         for row in data_rows:
             cols = row.find_elements(By.TAG_NAME, "td")
@@ -84,7 +83,7 @@ def extract_table_data():
         print(f"⚠️  Gagal ekstrak data: {e}")
         return []
 
-# Ambil semua data dari URL yang diberikan
+
 def collect_data(urls_dict, jenis):
     all_data = []
     for bagian, url in urls_dict.items():
@@ -93,18 +92,18 @@ def collect_data(urls_dict, jenis):
         time.sleep(1.5)
         data = extract_table_data()
         for row in data:
-            all_data.append([bagian] + row)  # Tambahkan nama bagian sebagai kolom pertama
+            all_data.append([bagian] + row)  
     return all_data
 
-# Eksekusi utama
+
 try:
     login()
 
-    # Ambil data loss & komponen
+    
     loss_data = collect_data(loss_urls, "LOSS")
     komponen_data = collect_data(komponen_urls, "KOMPONEN")
 
-    # Simpan ke Excel
+    
     os.makedirs("data", exist_ok=True)
 
     df_loss = pd.DataFrame(loss_data)
