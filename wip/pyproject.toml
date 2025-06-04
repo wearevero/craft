@@ -2,7 +2,7 @@
 name = "routine_wip"
 version = "0.1.0"
 description = "Automasi scraping data harian WIP"
-requires-python = ">=3.8"
+rcequires-python = ">=3.8"
 
 dependencies = ["selenium", "python-dotenv", "pywin32", "pandas"]
 

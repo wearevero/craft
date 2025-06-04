@@ -35,7 +35,7 @@ def main():
         os.makedirs("data", exist_ok=True)
 
         df_komponen = pd.DataFrame(komponen_data)
-        filename = f"data/komponen-bagian-{input_tanggal}.xlsx"
+        filename = f"data/tambah-komponen-{input_tanggal}.xlsx"
 
         if len(komponen_data) > 0:
 
