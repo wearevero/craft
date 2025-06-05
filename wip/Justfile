@@ -1,0 +1,4 @@
+run:
+    python src/filling.py
+    python src/loss.py
+    python src/komponen.py

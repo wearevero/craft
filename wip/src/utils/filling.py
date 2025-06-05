@@ -90,6 +90,7 @@ def extract_table_data(driver):
 
     if not table:
         print("❌ Tidak dapat menemukan tabel dengan selector apapun")
+
         print("📄 Struktur HTML halaman:")
         print(driver.page_source[:1000])
         return []
@@ -144,6 +145,7 @@ def collect_data(driver, urls_dict, jenis):
         time.sleep(2)
 
         try:
+
             time.sleep(1)
             current_url = driver.current_url
             print(f"📍 Current URL: {current_url}")
@@ -171,7 +173,6 @@ def collect_data(driver, urls_dict, jenis):
 
 
 def generate_urls(base_path, tanggal):
-    """Generate URLs untuk scraping data Filling Tem"""
     bagian_mapping = {
         "Filling Tem": 8,
     }

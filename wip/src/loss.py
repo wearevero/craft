@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from utils import create_driver, login, generate_urls, collect_data, get_tanggal_input
+from utils.loss import create_driver, login, generate_urls, collect_data, get_tanggal_input
 
 
 def main():
