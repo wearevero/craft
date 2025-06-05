@@ -1,6 +1,44 @@
 import os
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import numbers
 from utils_filling import create_driver, login, generate_urls, collect_data, get_tanggal_input
+
+
+def save_to_excel_with_number_format(data, filename):
+    """Menyimpan data ke Excel dengan format number yang benar"""
+    if not data:
+        print("❌ Tidak ada data untuk disimpan")
+        return
+    
+    # Buat workbook baru
+    wb = Workbook()
+    ws = wb.active
+    
+    # Tambahkan data ke worksheet
+    for row in data:
+        ws.append(row)
+    
+    # Format kolom yang berisi angka (kolom 2 dan seterusnya biasanya berisi angka)
+    # Asumsikan kolom pertama adalah nama bagian (text), sisanya adalah angka
+    for row_idx in range(1, ws.max_row + 1):
+        for col_idx in range(2, ws.max_column + 1):  # Mulai dari kolom kedua
+            cell = ws.cell(row=row_idx, column=col_idx)
+            try:
+                # Coba konversi ke float jika memungkinkan
+                if cell.value and str(cell.value).replace('.', '').replace(',', '').replace('-', '').isdigit():
+                    # Hapus koma jika ada (format angka Indonesia)
+                    numeric_value = float(str(cell.value).replace(',', ''))
+                    cell.value = numeric_value
+                    cell.number_format = numbers.FORMAT_NUMBER
+            except (ValueError, TypeError):
+                # Jika tidak bisa dikonversi, biarkan sebagai text
+                pass
+    
+    # Simpan file
+    wb.save(filename)
+    print(f"✅ Data berhasil disimpan dengan format number yang benar: {filename}")
 
 
 def main():
@@ -15,7 +53,6 @@ def main():
     driver = create_driver()
 
     try:
-
         login(driver)
         loss_data = collect_data(driver, loss_urls, "LOSS")
 
@@ -32,21 +69,21 @@ def main():
 
         os.makedirs("data", exist_ok=True)
 
-        df_loss = pd.DataFrame(loss_data)
         filename = f"data/filling-tem-{input_tanggal}.xlsx"
 
         if len(loss_data) > 0:
-
             print(f"📋 Struktur data pertama: {loss_data[0]}")
             print(f"📏 Jumlah kolom: {len(loss_data[0]) if loss_data else 0}")
 
-            df_loss.to_excel(filename, index=False, header=False)
+            # Gunakan fungsi baru untuk menyimpan dengan format number
+            save_to_excel_with_number_format(loss_data, filename)
 
             if os.path.exists(filename):
                 file_size = os.path.getsize(filename)
                 print(f"✅ Data LOSS berhasil disimpan di '{filename}'")
                 print(f"📁 Ukuran file: {file_size} bytes")
 
+                # Verifikasi dengan pandas
                 df_test = pd.read_excel(filename, header=None)
                 print(f"✅ Verifikasi: File berisi {len(df_test)} baris")
             else:
@@ -57,11 +94,9 @@ def main():
     except Exception as e:
         print(f"❌ Terjadi kesalahan: {e}")
         import traceback
-
         traceback.print_exc()
 
     finally:
-
         print("\n🟢 Browser tetap terbuka untuk pemeriksaan manual.")
         print("💡 Tips debugging:")
         print("  1. Cek apakah halaman web berisi tabel data")
