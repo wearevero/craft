@@ -174,7 +174,7 @@ def collect_data(driver, urls_dict, jenis):
 
 def generate_urls(base_path, tanggal):
     bagian_mapping = {
-        "Filling Tem": 8,
+        "FILLING TEM": 8,
     }
 
     urls = {}

@@ -5,8 +5,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,36 +17,22 @@ CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH")
 def create_driver():
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
-    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    chrome_options.add_experimental_option("useAutomationExtension", False)
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    )
     return driver
 
 
 def login(driver):
     print("🔐 Login ke sistem...")
     driver.get(WEB_URL)
-
-    wait = WebDriverWait(driver, 10)
+    time.sleep(2)
 
     try:
-        email_field = wait.until(EC.presence_of_element_located((By.NAME, "email")))
-        password_field = driver.find_element(By.NAME, "password")
-
-        email_field.clear()
-        email_field.send_keys(EMAIL)
-        password_field.clear()
-        password_field.send_keys(PASSWORD)
+        driver.find_element(By.NAME, "email").send_keys(EMAIL)
+        driver.find_element(By.NAME, "password").send_keys(PASSWORD)
         driver.find_element(By.TAG_NAME, "form").submit()
-
-        time.sleep(3)
+        time.sleep(2)
         print("✅ Login berhasil.")
-
     except Exception as e:
         print(f"❌ Gagal login: {e}")
         raise
@@ -84,78 +68,42 @@ def highlight_rows(driver, rows, duration=1.5):
         print(f"⚠️ Gagal highlight rows: {e}")
 
 
-def extract_table_data(driver, report_type="UNKNOWN"):
-    """Mengambil data dari tabel utama dengan dukungan berbagai jenis laporan"""
-    print(f"🔍 Mencari tabel data untuk {report_type}...")
-    time.sleep(2)
+def extract_table_data(driver):
+    """Mengambil data dari tabel utama dan highlight semua baris yang akan diambil sekaligus"""
+    print("🔍 Mencari tabel data...")
 
     selectors = [
         "td.judul > table > tbody",
-        "table.table > tbody",
-        ".table > tbody",
         "table > tbody",
         ".judul table tbody",
         "table tbody",
-        "#content table tbody",
-        ".content table tbody",
     ]
 
     table = None
-    used_selector = None
-
     for selector in selectors:
         try:
-            tables = driver.find_elements(By.CSS_SELECTOR, selector)
-            if tables:
-
-                for t in tables:
-                    rows = t.find_elements(By.TAG_NAME, "tr")
-                    if len(rows) > 2:
-                        table = t
-                        used_selector = selector
-                        break
-                if table:
-                    break
-        except Exception as e:
+            table = driver.find_element(By.CSS_SELECTOR, selector)
+            print(f"✅ Tabel ditemukan dengan selector: {selector}")
+            break
+        except:
             continue
 
     if not table:
-        print(f"❌ Tidak dapat menemukan tabel untuk {report_type}")
+        print("❌ Tidak dapat menemukan tabel dengan selector apapun")
 
-        debug_filename = f"debug_{report_type.lower()}_page.html"
-        try:
-            with open(debug_filename, "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            print(f"📄 HTML halaman disimpan ke {debug_filename}")
-        except:
-            pass
-
-        all_tables = driver.find_elements(By.TAG_NAME, "table")
-        print(f"📊 Total tabel ditemukan di halaman: {len(all_tables)}")
-
+        print("📄 Struktur HTML halaman:")
+        print(driver.page_source[:1000])
         return []
-
-    print(f"✅ Tabel ditemukan dengan selector: {used_selector}")
 
     try:
         rows = table.find_elements(By.TAG_NAME, "tr")
         print(f"📊 Total baris ditemukan: {len(rows)}")
 
         if len(rows) <= 2:
-            print(f"⚠️ Tabel {report_type} kosong atau hanya ada header")
+            print("⚠️ Tabel kosong atau hanya ada header")
             return []
 
-        data_rows = rows[1:]
-
-        if len(data_rows) > 1:
-            last_row_text = data_rows[-1].text.lower()
-            if any(
-                keyword in last_row_text
-                for keyword in ["total", "jumlah", "sum", "grand"]
-            ):
-                data_rows = data_rows[:-1]
-                print("📝 Footer row detected and removed")
-
+        data_rows = rows[1:-1]
         print(f"📈 Baris data yang akan diambil: {len(data_rows)}")
 
         if data_rows:
@@ -166,17 +114,14 @@ def extract_table_data(driver, report_type="UNKNOWN"):
             cols = row.find_elements(By.TAG_NAME, "td")
             if cols:
                 row_data = [col.text.strip() for col in cols]
+                data.append(row_data)
+                print(f"  Baris {i+1}: {row_data}")
 
-                if any(cell.strip() for cell in row_data):
-                    data.append(row_data)
-                    if i < 3:
-                        print(f"  Baris {i+1}: {row_data}")
-
-        print(f"✅ Total data {report_type} berhasil diambil: {len(data)} baris")
+        print(f"✅ Total data berhasil diambil: {len(data)} baris")
         return data
 
     except Exception as e:
-        print(f"❌ Gagal ekstrak data {report_type}: {e}")
+        print(f"❌ Gagal ekstrak data: {e}")
         return []
 
 
@@ -197,81 +142,58 @@ def collect_data(driver, urls_dict, jenis):
             driver.switch_to.window(driver.window_handles[-1])
             driver.get(url)
 
-        wait = WebDriverWait(driver, 10)
         time.sleep(2)
 
         try:
+
+            time.sleep(1)
             current_url = driver.current_url
-            page_title = driver.title
             print(f"📍 Current URL: {current_url}")
-            print(f"📄 Page title: {page_title}")
 
-            page_source_lower = driver.page_source.lower()
-            if any(
-                error in page_source_lower
-                for error in ["error", "404", "500", "not found"]
-            ):
-                print(f"⚠️ Halaman error terdeteksi untuk bagian {bagian}")
-                continue
-
-            try:
-                wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
-            except:
-                print(f"⚠️ Tidak ada tabel ditemukan untuk {bagian}")
+            if "error" in driver.page_source.lower() or "404" in driver.title:
+                print(f"⚠️ Halaman error untuk bagian {bagian}")
                 continue
 
         except Exception as e:
             print(f"⚠️ Gagal memuat halaman untuk {bagian}: {e}")
             continue
 
-        data = extract_table_data(driver, f"{jenis}-{bagian}")
+        data = extract_table_data(driver)
 
         if data:
             for row in data:
-
-                extended_row = row + [bagian.upper()]
-                all_data.append(extended_row)
+                all_data.append([bagian] + row)
             print(f"✅ Berhasil mengambil {len(data)} baris dari {bagian}")
         else:
             print(f"⚠️ Tidak ada data dari {bagian}")
 
-        if i > 0:
-            driver.close()
-            driver.switch_to.window(original_tab)
-
-    print(f"\n🎯 Total data {jenis} terkumpul: {len(all_data)} baris")
+    driver.switch_to.window(original_tab)
+    print(f"\n🎯 Total data terkumpul: {len(all_data)} baris")
     return all_data
 
 
 def generate_urls(base_path, tanggal):
-    """Generate URLs for different report types"""
     bagian_mapping = {
-        "cutting 2": 7,
-        "tambah part": 125,
-        "recasting": 101,
-        "repair part": 126,
-        "ilca": 103,
-        "striping": 9,
-        "pending": 15,
-        "perbaikan": 16,
-        "rangkai 1": 12,
-        "segong repair": 2,
-        "fillling1": 13,
-        "filling 2": 17,
-        "polishing 1": 100,
-        "polishing 2": 11,
-        "polishing cvd": 122,
+        "CUTTING 2": 7,
+        "TAMBAH PRAT": 125,
+        "RE-CASTING": 101,
+        "REPAIR PART": 126,
+        "ILCA": 103,
+        "STRIPING": 9,
+        "PENDING": 15,
+        "PERBAIKAN": 16,
+        "RANGKAI 1": 12,
+        "SEGONG REPAIR": 2,
+        "FILLLING1": 13,
+        "FILLING 2": 17,
+        "POLISHING 1": 100,
+        "POLISHING 2": 11,
+        "POLISHING CVD": 122,
     }
 
     urls = {}
     for bagian, bagian_id in bagian_mapping.items():
         urls[bagian] = f"{WEB_URL}/{base_path}?d={tanggal}&s=&b={bagian_id}&m=all"
-
-    print(f"🔗 Generated URLs untuk {base_path}:")
-    for bagian, url in list(urls.items())[:3]:
-        print(f"  {bagian}: {url}")
-    print(f"  ... dan {len(urls)-3} URL lainnya")
-
     return urls
 
 
@@ -282,10 +204,4 @@ def get_tanggal_input():
     ).strip()
     if input_tanggal == "":
         input_tanggal = datetime.today().strftime("%Y-%m-%d")
-
-    try:
-        datetime.strptime(input_tanggal, "%Y-%m-%d")
-        return input_tanggal
-    except ValueError:
-        print("❌ Format tanggal tidak valid, menggunakan tanggal hari ini")
-        return datetime.today().strftime("%Y-%m-%d")
+    return input_tanggal

@@ -1,6 +1,71 @@
 import os
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import numbers
 from utils.komponen import create_driver, login, generate_urls, collect_data, get_tanggal_input
+import re
+
+
+def save_to_excel_with_number_format(data, filename):
+    """Menyimpan data ke Excel dengan format number yang benar sesuai format asli dari web"""
+    if not data:
+        print("❌ Tidak ada data untuk disimpan")
+        return
+    
+    wb = Workbook()
+    ws = wb.active
+    
+
+    for row in data:
+        ws.append(row)
+    
+    for row_idx in range(1, ws.max_row + 1):
+        for col_idx in range(2, ws.max_column + 1):  
+            cell = ws.cell(row=row_idx, column=col_idx)
+            
+            if cell.value and str(cell.value).strip():
+                cell_value_str = str(cell.value).strip()
+                
+                if is_numeric_value(cell_value_str):
+                    cleaned_value = cell_value_str.replace(',', '')
+                    
+                    try:
+                        numeric_value = float(cleaned_value)
+                        cell.value = numeric_value
+                        
+                        if '.' in cell_value_str:
+                            decimal_places = len(cell_value_str.split('.')[-1])
+                            
+                            if decimal_places == 1:
+                                cell.number_format = '0.0'
+                            elif decimal_places == 2:
+                                cell.number_format = '0.00'
+                            elif decimal_places == 3:
+                                cell.number_format = '0.000'
+                            else:
+                                cell.number_format = '0.' + '0' * decimal_places
+                        else:
+                            if numeric_value == int(numeric_value):
+                                cell.number_format = '0'
+                            else:
+                                cell.number_format = '0.00'
+                                
+                    except (ValueError, TypeError):
+                        pass
+    
+    # Simpan file
+    wb.save(filename)
+    print(f"✅ Data berhasil disimpan dengan format number yang benar: {filename}")
+
+
+def is_numeric_value(value_str):
+    """Mengecek apakah string adalah nilai numerik"""
+    cleaned = value_str.replace(',', '')
+    
+    pattern = r'^-?\d+\.?\d*$'
+    
+    return bool(re.match(pattern, cleaned))
 
 
 def main():
@@ -10,47 +75,34 @@ def main():
     print(f"📅 Tanggal yang dipilih: {input_tanggal}")
 
     komponen_urls = generate_urls("laporan/komponen_cetak", input_tanggal)
-    print(f"🔗 Generated {len(komponen_urls)} URLs untuk KOMPONEN")
+    print(f"🔗 Generated {len(komponen_urls)} URLs")
 
     driver = create_driver()
 
     try:
-
         login(driver)
-
         komponen_data = collect_data(driver, komponen_urls, "KOMPONEN")
 
-        print(f"\n📊 Data KOMPONEN yang terkumpul: {len(komponen_data)} baris")
+        print(f"\n📊 Data yang terkumpul: {len(komponen_urls)} baris")
 
         if not komponen_data:
-            print("❌ Tidak ada data KOMPONEN yang berhasil dikumpulkan!")
+            print("❌ Tidak ada data yang berhasil dikumpulkan!")
             print("🔍 Kemungkinan penyebab:")
             print("  - Selector CSS tidak cocok dengan struktur HTML")
-            print("  - Tanggal tidak memiliki data komponen")
+            print("  - Tanggal tidak memiliki data")
             print("  - Halaman web berubah struktur")
             print("  - Koneksi timeout")
-            print("  - URL komponen_cetak tidak valid")
             return
 
         os.makedirs("data", exist_ok=True)
 
-        df_komponen = pd.DataFrame(komponen_data)
-        filename = f"data/tambah-komponen-{input_tanggal}.xlsx"
+        filename = f"data/komponen-{input_tanggal}.xlsx"
 
         if len(komponen_data) > 0:
-
-            print(f"📋 Struktur data KOMPONEN pertama: {komponen_data[0]}")
+            print(f"📋 Struktur data pertama: {komponen_data[0]}")
             print(f"📏 Jumlah kolom: {len(komponen_data[0]) if komponen_data else 0}")
 
-            print("📝 Preview data KOMPONEN (5 baris pertama):")
-            for i, row in enumerate(komponen_data[:5]):
-                print(f"  Baris {i+1}: {row}")
-
-            print("💡 Struktur kolom:")
-            print("  Kolom terakhir: NAMA BAGIAN (UPPERCASE)")
-            print("  Kolom sebelumnya: Jenis material (Diamond/Mounting/CVD, dll)")
-
-            df_komponen.to_excel(filename, index=False, header=False)
+            save_to_excel_with_number_format(komponen_data, filename)
 
             if os.path.exists(filename):
                 file_size = os.path.getsize(filename)
@@ -58,17 +110,12 @@ def main():
                 print(f"📁 Ukuran file: {file_size} bytes")
 
                 df_test = pd.read_excel(filename, header=None)
-                print(
-                    f"✅ Verifikasi: File berisi {len(df_test)} baris dan {len(df_test.columns)} kolom"
-                )
-
-                print(f"📈 Statistik data:")
-                print(f"  - Total baris: {len(df_test)}")
-                print(f"  - Total kolom: {len(df_test.columns)}")
-                print(
-                    f"  - Bagian unik: {df_test[0].nunique() if len(df_test) > 0 else 0}"
-                )
-
+                print(f"✅ Verifikasi: File berisi {len(df_test)} baris")
+                
+                print("\n🔍 Debug info - Sample data dari Excel:")
+                for i, row in enumerate(df_test.head(3).iterrows()):
+                    print(f"Baris {i+1}: {list(row[1])}")
+                    
             else:
                 print(f"❌ File tidak berhasil dibuat: {filename}")
         else:
@@ -77,31 +124,16 @@ def main():
     except Exception as e:
         print(f"❌ Terjadi kesalahan: {e}")
         import traceback
-
         traceback.print_exc()
 
-        print("\n🔍 Debug info untuk KOMPONEN:")
-        try:
-            print(f"📍 Current URL: {driver.current_url}")
-            print(f"📄 Page title: {driver.title}")
-
-            with open("debug_komponen_page.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-            print("📄 HTML halaman komponen disimpan ke debug_komponen_page.html")
-
-        except Exception as debug_e:
-            print(f"⚠️ Gagal mendapatkan debug info: {debug_e}")
-
     finally:
-
         print("\n🟢 Browser tetap terbuka untuk pemeriksaan manual.")
-        print("💡 Tips debugging untuk KOMPONEN:")
-        print("  1. Cek apakah URL laporan/komponen_cetak valid")
-        print("  2. Bandingkan struktur tabel dengan laporan/loss_bagian_cetak")
-        print("  3. Pastikan tanggal memiliki data komponen")
-        print("  4. Inspect element untuk melihat struktur HTML tabel komponen")
-        print("  5. Cek console browser untuk error JavaScript")
-        print("  6. Verifikasi apakah bagian_mapping untuk komponen sama dengan loss")
+        print("💡 Tips debugging:")
+        print("  1. Cek apakah halaman web berisi tabel data")
+        print("  2. Inspect element untuk melihat struktur HTML tabel")
+        print("  3. Pastikan tanggal memiliki data")
+        print("  4. Cek console browser untuk error JavaScript")
+        print("  5. Periksa format angka di Excel apakah sesuai dengan web")
 
 
 if __name__ == "__main__":

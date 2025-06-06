@@ -174,21 +174,21 @@ def collect_data(driver, urls_dict, jenis):
 
 def generate_urls(base_path, tanggal):
     bagian_mapping = {
-        "cutting 2": 7,
-        "tambah part": 125,
-        "recasting": 101,
-        "repair part": 126,
-        "ilca": 103,
-        "striping": 9,
-        "pending": 15,
-        "perbaikan": 16,
-        "rangkai 1": 12,
-        "segong repair": 2,
-        "fillling1": 13,
-        "filling 2": 17,
-        "polishing 1": 100,
-        "polishing 2": 11,
-        "polishing cvd": 122,
+        "CUTTING 2": 7,
+        "TAMBAH PRAT": 125,
+        "RE-CASTING": 101,
+        "REPAIR PART": 126,
+        "ILCA": 103,
+        "STRIPING": 9,
+        "PENDING": 15,
+        "PERBAIKAN": 16,
+        "RANGKAI 1": 12,
+        "SEGONG REPAIR": 2,
+        "FILLLING1": 13,
+        "FILLING 2": 17,
+        "POLISHING 1": 100,
+        "POLISHING 2": 11,
+        "POLISHING CVD": 122,
     }
 
     urls = {}

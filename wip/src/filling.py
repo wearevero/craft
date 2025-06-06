@@ -4,61 +4,87 @@ from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import numbers
 from utils.filling import create_driver, login, generate_urls, collect_data, get_tanggal_input
+import re
 
 
 def save_to_excel_with_number_format(data, filename):
-    """Menyimpan data ke Excel dengan format number yang benar"""
+    """Menyimpan data ke Excel dengan format number yang benar sesuai format asli dari web"""
     if not data:
         print("❌ Tidak ada data untuk disimpan")
         return
     
-    # Buat workbook baru
     wb = Workbook()
     ws = wb.active
     
-    # Tambahkan data ke worksheet
     for row in data:
         ws.append(row)
     
-    # Format kolom yang berisi angka (kolom 2 dan seterusnya biasanya berisi angka)
-    # Asumsikan kolom pertama adalah nama bagian (text), sisanya adalah angka
     for row_idx in range(1, ws.max_row + 1):
-        for col_idx in range(2, ws.max_column + 1):  # Mulai dari kolom kedua
+        for col_idx in range(2, ws.max_column + 1): 
             cell = ws.cell(row=row_idx, column=col_idx)
-            try:
-                # Coba konversi ke float jika memungkinkan
-                if cell.value and str(cell.value).replace('.', '').replace(',', '').replace('-', '').isdigit():
-                    # Hapus koma jika ada (format angka Indonesia)
-                    numeric_value = float(str(cell.value).replace(',', ''))
-                    cell.value = numeric_value
-                    cell.number_format = numbers.FORMAT_NUMBER
-            except (ValueError, TypeError):
-                # Jika tidak bisa dikonversi, biarkan sebagai text
-                pass
+            
+            if cell.value and str(cell.value).strip():
+                cell_value_str = str(cell.value).strip()
+                
+                if is_numeric_value(cell_value_str):
+                    cleaned_value = cell_value_str.replace(',', '')
+                    
+                    try:
+                        numeric_value = float(cleaned_value)
+                        cell.value = numeric_value
+                        
+                        if '.' in cell_value_str:
+                            decimal_places = len(cell_value_str.split('.')[-1])
+                            
+                            if decimal_places == 1:
+                                cell.number_format = '0.0'
+                            elif decimal_places == 2:
+                                cell.number_format = '0.00'
+                            elif decimal_places == 3:
+                                cell.number_format = '0.000'
+                            else:
+                                cell.number_format = '0.' + '0' * decimal_places
+                        else:
+                            if numeric_value == int(numeric_value):
+                                cell.number_format = '0'
+                            else:
+                                cell.number_format = '0.00'
+                                
+                    except (ValueError, TypeError):
+                        pass
     
     # Simpan file
     wb.save(filename)
     print(f"✅ Data berhasil disimpan dengan format number yang benar: {filename}")
 
 
+def is_numeric_value(value_str):
+    """Mengecek apakah string adalah nilai numerik"""
+    cleaned = value_str.replace(',', '')
+    
+    pattern = r'^-?\d+\.?\d*$'
+    
+    return bool(re.match(pattern, cleaned))
+
+
 def main():
-    print("🚀 Memulai scraping data LOSS...")
+    print("🚀 Memulai scraping data FILLING TEM...")
 
     input_tanggal = get_tanggal_input()
     print(f"📅 Tanggal yang dipilih: {input_tanggal}")
 
-    loss_urls = generate_urls("laporan/loss_bagian_cetak", input_tanggal)
-    print(f"🔗 Generated {len(loss_urls)} URLs")
+    filling_urls = generate_urls("laporan/loss_bagian_cetak", input_tanggal)
+    print(f"🔗 Generated {len(filling_urls)} URLs")
 
     driver = create_driver()
 
     try:
         login(driver)
-        loss_data = collect_data(driver, loss_urls, "LOSS")
+        filling_data = collect_data(driver, filling_urls, "FILLING TEM")
 
-        print(f"\n📊 Data yang terkumpul: {len(loss_data)} baris")
+        print(f"\n📊 Data yang terkumpul: {len(filling_data)} baris")
 
-        if not loss_data:
+        if not filling_data:
             print("❌ Tidak ada data yang berhasil dikumpulkan!")
             print("🔍 Kemungkinan penyebab:")
             print("  - Selector CSS tidak cocok dengan struktur HTML")
@@ -69,23 +95,27 @@ def main():
 
         os.makedirs("data", exist_ok=True)
 
-        filename = f"data/filling-tem-{input_tanggal}.xlsx"
+        filename = f"data/filling-{input_tanggal}.xlsx"
 
-        if len(loss_data) > 0:
-            print(f"📋 Struktur data pertama: {loss_data[0]}")
-            print(f"📏 Jumlah kolom: {len(loss_data[0]) if loss_data else 0}")
+        if len(filling_data) > 0:
+            print(f"📋 Struktur data pertama: {filling_data[0]}")
+            print(f"📏 Jumlah kolom: {len(filling_data[0]) if filling_data else 0}")
 
-            # Gunakan fungsi baru untuk menyimpan dengan format number
-            save_to_excel_with_number_format(loss_data, filename)
+            save_to_excel_with_number_format(filling_data, filename)
 
             if os.path.exists(filename):
                 file_size = os.path.getsize(filename)
-                print(f"✅ Data LOSS berhasil disimpan di '{filename}'")
+                print(f"✅ Data FILLING TEM berhasil disimpan di '{filename}'")
                 print(f"📁 Ukuran file: {file_size} bytes")
 
-                # Verifikasi dengan pandas
                 df_test = pd.read_excel(filename, header=None)
                 print(f"✅ Verifikasi: File berisi {len(df_test)} baris")
+                
+                # Debug info untuk melihat format angka
+                print("\n🔍 Debug info - Sample data dari Excel:")
+                for i, row in enumerate(df_test.head(3).iterrows()):
+                    print(f"Baris {i+1}: {list(row[1])}")
+                    
             else:
                 print(f"❌ File tidak berhasil dibuat: {filename}")
         else:
@@ -103,6 +133,7 @@ def main():
         print("  2. Inspect element untuk melihat struktur HTML tabel")
         print("  3. Pastikan tanggal memiliki data")
         print("  4. Cek console browser untuk error JavaScript")
+        print("  5. Periksa format angka di Excel apakah sesuai dengan web")
 
 
 if __name__ == "__main__":
