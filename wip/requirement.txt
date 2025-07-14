@@ -1,5 +1,0 @@
-selenium
-python-dotenv
-pywin32
-pandas
-xlsxwriter
