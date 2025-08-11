@@ -1,0 +1,33 @@
+2025-06-19 14:10:34,338 - INFO - Scanning directory: master
+2025-06-19 14:10:34,339 - INFO - Ditemukan 7 file Excel
+2025-06-19 14:10:34,340 - INFO - Validating file: IJM250620 Clearance.xlsx
+2025-06-19 14:10:34,488 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,490 - INFO - Found PO# at row 19
+2025-06-19 14:10:34,493 - INFO - Valid file added: IJM250620 Clearance.xlsx
+2025-06-19 14:10:34,493 - INFO - Validating file: JCG250620 Clearance.xlsx
+2025-06-19 14:10:34,542 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,551 - INFO - Valid file added: JCG250620 Clearance.xlsx
+2025-06-19 14:10:34,552 - INFO - Validating file: KB250620 Clearance.xlsx
+2025-06-19 14:10:34,595 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,602 - INFO - Valid file added: KB250620 Clearance.xlsx
+2025-06-19 14:10:34,602 - INFO - Validating file: MLD250620 Clearance.xlsx
+2025-06-19 14:10:34,639 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,644 - INFO - Valid file added: MLD250620 Clearance.xlsx
+2025-06-19 14:10:34,645 - INFO - Validating file: MP250620 Clearance.xlsx
+2025-06-19 14:10:34,684 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,685 - INFO - Found PO# at row 15
+2025-06-19 14:10:34,686 - INFO - Found PO# at row 16
+2025-06-19 14:10:34,687 - INFO - Found PO# at row 17
+2025-06-19 14:10:34,688 - INFO - Found PO# at row 18
+2025-06-19 14:10:34,690 - INFO - Valid file added: MP250620 Clearance.xlsx
+2025-06-19 14:10:34,690 - INFO - Validating file: OG250620 Clearance.xlsx
+2025-06-19 14:10:34,736 - INFO - Found PO# at row 14
+2025-06-19 14:10:34,738 - INFO - Found PO# at row 18
+2025-06-19 14:10:34,742 - INFO - Valid file added: OG250620 Clearance.xlsx
+2025-06-19 14:10:34,742 - INFO - Validating file: ~$IJM250620 Clearance.xlsx
+2025-06-19 14:10:34,743 - WARNING - Primary engine failed, trying alternative: [Errno 13] Permission denied: 'master\\~$IJM250620 Clearance.xlsx'
+2025-06-19 14:10:34,743 - WARNING - Invalid file skipped: ~$IJM250620 Clearance.xlsx - Cannot read file: [Errno 13] Permission denied: 'master\\~$IJM250620 Clearance.xlsx'
+2025-06-19 14:10:34,743 - INFO - Reading file: IJM250620 Clearance.xlsx
+2025-06-19 14:10:34,766 - INFO - File berhasil dibaca: 32 baris, 31 kolom
+2025-06-19 14:14:15,451 - INFO - Reading file: IJM250620 Clearance.xlsx
+2025-06-19 14:14:15,477 - INFO - File berhasil dibaca: 32 baris, 31 kolom
