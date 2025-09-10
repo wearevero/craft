@@ -1,6 +1,6 @@
-# Routine
+# Craft
 
-Routine is a streamlined automation project designed to handle repetitive daily tasks efficiently. Built with simplicity and configurability in mind to automate data extraction and processing workflows.
+Craft is a streamlined automation project designed to handle repetitive daily tasks efficiently. Built with simplicity and configurability in mind to automate data extraction and processing workflows.
 
 ## Purpose
 
