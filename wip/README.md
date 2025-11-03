@@ -8,9 +8,9 @@ All main script files are located in the `src` directory. Feel free to explore o
 
 ### Driver
 
-To run the script properly, you'll need a ChromeDriver version that matches your Chrome browser version.  
-We provide a default version that works for us, but if your Chrome browser version is different, you can download a compatible one here:  
-[https://github.com/dreamshao/chromedriver](https://github.com/dreamshao/chromedriver)
+To run the script properly, we'll need a ChromeDriver version that matches with our Chrome browser version.  
+We can download a compatible version here::  
+[Github](https://github.com/GoogleChromeLabs/chrome-for-testing) or [the web](googlechromelabs.github.io/chrome-for-testing/).
 
 ### Data
 
