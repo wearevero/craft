@@ -1,0 +1,4 @@
+// List of the name file that want to take
+
+example1.jpg
+example2.txt
