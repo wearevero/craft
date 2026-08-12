@@ -2,15 +2,15 @@ install:
     pip install -r requirements.txt
 
 run:
-    @just run-filling
-    @just run-loss
-    @just run-komponen
+    @just filling
+    @just loss
+    @just komponen
 
-run-filling:
+filling:
     python src/filling.py
 
-run-loss:
+loss:
     python src/loss.py
 
-run-komponen:
+komponen:
     python src/komponen.py

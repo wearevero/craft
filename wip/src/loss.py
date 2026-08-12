@@ -6,6 +6,9 @@ from openpyxl.styles import numbers
 from utils.loss import create_driver, login, generate_urls, collect_data, get_tanggal_input
 import re
 
+# Folder tujuan penyimpanan file. Bisa dioverride lewat variabel OUTPUT_DIR di .env
+OUTPUT_DIR = os.getenv("OUTPUT_DIR", r"D:\Work\CORE\WIP\KRIDO\WIP TEMPLATE")
+
 
 def save_to_excel_with_number_format(data, filename):
     """Menyimpan data ke Excel dengan format number yang benar sesuai format asli dari web"""
@@ -106,9 +109,9 @@ def main():
             print("  - Koneksi timeout")
             return
 
-        os.makedirs("data", exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-        filename = f"data/loss-{input_tanggal}.xlsx"
+        filename = os.path.join(OUTPUT_DIR, f"loss-{input_tanggal}.xlsx")
 
         if len(loss_data) > 0:
             print(f"📋 Struktur data pertama: {loss_data[0]}")
