@@ -1,0 +1,1 @@
+Get-ChildItem -Path "C:\Users\Nama\Documents\SourceFolder" | Where-Object { $_.CreationTime -ge '2000-01-01' -and $_.CreationTime -le '2000-01-01' } | Copy-Item -Destination "D:\NY\2000-01-01"
