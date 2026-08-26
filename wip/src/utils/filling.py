@@ -6,8 +6,11 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
+from rich.console import Console
 
 load_dotenv()
+
+console = Console()
 WEB_URL = os.getenv("WEB_URL")
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
@@ -17,13 +20,14 @@ CHROMEDRIVER_PATH = os.getenv("CHROMEDRIVER_PATH")
 def create_driver():
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
     service = Service(CHROMEDRIVER_PATH)
     driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
 
 def login(driver):
-    print("🔐 Login ke sistem...")
+    console.print("[bold cyan]🔐 Login ke sistem...[/bold cyan]")
     driver.get(WEB_URL)
     time.sleep(2)
 
@@ -32,9 +36,9 @@ def login(driver):
         driver.find_element(By.NAME, "password").send_keys(PASSWORD)
         driver.find_element(By.TAG_NAME, "form").submit()
         time.sleep(2)
-        print("✅ Login berhasil.")
+        console.print("[bold green]✅ Login berhasil.[/bold green]\n")
     except Exception as e:
-        print(f"❌ Gagal login: {e}")
+        console.print(f"[bold red]❌ Gagal login: {e}[/bold red]")
         raise
 
 
@@ -70,8 +74,6 @@ def highlight_rows(driver, rows, duration=1.5):
 
 def extract_table_data(driver):
     """Mengambil data dari tabel utama dan highlight semua baris yang akan diambil sekaligus"""
-    print("🔍 Mencari tabel data...")
-
     selectors = [
         "td.judul > table > tbody",
         "table > tbody",
@@ -83,58 +85,46 @@ def extract_table_data(driver):
     for selector in selectors:
         try:
             table = driver.find_element(By.CSS_SELECTOR, selector)
-            print(f"✅ Tabel ditemukan dengan selector: {selector}")
             break
         except:
             continue
 
     if not table:
-        print("❌ Tidak dapat menemukan tabel dengan selector apapun")
-
-        print("📄 Struktur HTML halaman:")
-        print(driver.page_source[:1000])
         return []
 
     try:
         rows = table.find_elements(By.TAG_NAME, "tr")
-        print(f"📊 Total baris ditemukan: {len(rows)}")
 
         if len(rows) <= 2:
-            print("⚠️ Tabel kosong atau hanya ada header")
             return []
 
         data_rows = rows[1:-1]
-        print(f"📈 Baris data yang akan diambil: {len(data_rows)}")
 
         if data_rows:
             highlight_rows(driver, data_rows, duration=1.5)
 
         data = []
-        for i, row in enumerate(data_rows):
+        for row in data_rows:
             cols = row.find_elements(By.TAG_NAME, "td")
             if cols:
                 row_data = [col.text.strip() for col in cols]
                 data.append(row_data)
-                print(f"  Baris {i+1}: {row_data}")
 
-        print(f"✅ Total data berhasil diambil: {len(data)} baris")
         return data
 
     except Exception as e:
-        print(f"❌ Gagal ekstrak data: {e}")
+        console.print(f"[red]❌ Gagal ekstrak data: {e}[/red]")
         return []
 
 
 def collect_data(driver, urls_dict, jenis):
     all_data = []
     original_tab = driver.current_window_handle
+    total_bagian = len(urls_dict)
 
-    print(f"🚀 Memulai pengumpulan data {jenis} dari {len(urls_dict)} bagian...")
+    console.print(f"[bold]🚀 Mengumpulkan data {jenis}[/bold] — {total_bagian} bagian\n")
 
     for i, (bagian, url) in enumerate(urls_dict.items()):
-        print(f"\n📥 [{i+1}/{len(urls_dict)}] Mengambil data {jenis} - {bagian}...")
-        print(f"🔗 URL: {url}")
-
         if i == 0:
             driver.get(url)
         else:
@@ -145,17 +135,12 @@ def collect_data(driver, urls_dict, jenis):
         time.sleep(2)
 
         try:
-
             time.sleep(1)
-            current_url = driver.current_url
-            print(f"📍 Current URL: {current_url}")
-
             if "error" in driver.page_source.lower() or "404" in driver.title:
-                print(f"⚠️ Halaman error untuk bagian {bagian}")
+                console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [yellow]⚠️ halaman error[/yellow]")
                 continue
-
         except Exception as e:
-            print(f"⚠️ Gagal memuat halaman untuk {bagian}: {e}")
+            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [red]⚠️ gagal memuat halaman[/red]")
             continue
 
         data = extract_table_data(driver)
@@ -163,12 +148,18 @@ def collect_data(driver, urls_dict, jenis):
         if data:
             for row in data:
                 all_data.append([bagian] + row)
-            print(f"✅ Berhasil mengambil {len(data)} baris dari {bagian}")
+            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [green]✅ {len(data)} baris[/green]")
         else:
-            print(f"⚠️ Tidak ada data dari {bagian}")
+            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [dim]— tidak ada data[/dim]")
 
     driver.switch_to.window(original_tab)
-    print(f"\n🎯 Total data terkumpul: {len(all_data)} baris")
+    console.print()
+
+    if all_data:
+        console.print(f"[bold green]🎯 Total data {jenis} terkumpul: {len(all_data)} baris[/bold green]")
+    else:
+        console.print(f"[yellow]🎯 Tidak ada data {jenis} yang terkumpul[/yellow]")
+
     return all_data
 
 

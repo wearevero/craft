@@ -1,19 +1,22 @@
 import os
+import re
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.styles import numbers
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 from utils.filling import create_driver, login, generate_urls, collect_data, get_tanggal_input
-import re
 
 # Folder tujuan penyimpanan file. Bisa dioverride lewat variabel OUTPUT_DIR di .env
 OUTPUT_DIR = os.getenv("OUTPUT_DIR", r"D:\Work\CORE\WIP\KRIDO\WIP TEMPLATE")
+console = Console()
 
 
 def save_to_excel_with_number_format(data, filename):
     """Menyimpan data ke Excel dengan format number yang benar sesuai format asli dari web"""
     if not data:
-        print("❌ Tidak ada data untuk disimpan")
         return
     
     wb = Workbook()
@@ -58,7 +61,6 @@ def save_to_excel_with_number_format(data, filename):
     
     # Simpan file
     wb.save(filename)
-    print(f"✅ Data berhasil disimpan dengan format number yang benar: {filename}")
 
 
 def is_numeric_value(value_str):
@@ -71,72 +73,57 @@ def is_numeric_value(value_str):
 
 
 def main():
-    print("🚀 Memulai scraping data FILLING TEM...")
+    console.rule(f"[bold blue]FILLING TEM — Data Scraper[/bold blue]")
 
     input_tanggal = get_tanggal_input()
-    print(f"📅 Tanggal yang dipilih: {input_tanggal}")
+    console.print(f"📅 Tanggal: [bold]{input_tanggal}[/bold]\n")
 
     filling_urls = generate_urls("laporan/loss_bagian_cetak", input_tanggal)
-    print(f"🔗 Generated {len(filling_urls)} URLs")
-
     driver = create_driver()
 
     try:
         login(driver)
         filling_data = collect_data(driver, filling_urls, "FILLING TEM")
 
-        print(f"\n📊 Data yang terkumpul: {len(filling_data)} baris")
-
         if not filling_data:
-            print("❌ Tidak ada data yang berhasil dikumpulkan!")
-            print("🔍 Kemungkinan penyebab:")
-            print("  - Selector CSS tidak cocok dengan struktur HTML")
-            print("  - Tanggal tidak memiliki data")
-            print("  - Halaman web berubah struktur")
-            print("  - Koneksi timeout")
+            console.print(
+                Panel(
+                    "[dim]Kemungkinan penyebab:[/dim]\n"
+                    "• Tanggal tidak memiliki data\n"
+                    "• Halaman web berubah struktur\n"
+                    "• Koneksi timeout / gagal memuat halaman",
+                    title="⚠️  Tidak Ada Data",
+                    border_style="yellow",
+                )
+            )
             return
 
         os.makedirs(OUTPUT_DIR, exist_ok=True)
-
         filename = os.path.join(OUTPUT_DIR, f"filling-{input_tanggal}.xlsx")
 
-        if len(filling_data) > 0:
-            print(f"📋 Struktur data pertama: {filling_data[0]}")
-            print(f"📏 Jumlah kolom: {len(filling_data[0]) if filling_data else 0}")
+        save_to_excel_with_number_format(filling_data, filename)
 
-            save_to_excel_with_number_format(filling_data, filename)
+        if os.path.exists(filename):
+            file_size_kb = os.path.getsize(filename) / 1024
+            df_verifikasi = pd.read_excel(filename, header=None)
 
-            if os.path.exists(filename):
-                file_size = os.path.getsize(filename)
-                print(f"✅ Data FILLING TEM berhasil disimpan di '{filename}'")
-                print(f"📁 Ukuran file: {file_size} bytes")
-
-                df_test = pd.read_excel(filename, header=None)
-                print(f"✅ Verifikasi: File berisi {len(df_test)} baris")
-                
-                # Debug info untuk melihat format angka
-                print("\n🔍 Debug info - Sample data dari Excel:")
-                for i, row in enumerate(df_test.head(3).iterrows()):
-                    print(f"Baris {i+1}: {list(row[1])}")
-                    
-            else:
-                print(f"❌ File tidak berhasil dibuat: {filename}")
+            summary = Table.grid(padding=(0, 3))
+            summary.add_row("[bold]File[/bold]", os.path.basename(filename))
+            summary.add_row("[bold]Baris[/bold]", str(len(df_verifikasi)))
+            summary.add_row("[bold]Ukuran[/bold]", f"{file_size_kb:.1f} KB")
+            console.print(Panel(summary, title="💾 Disimpan", border_style="green"))
         else:
-            print("❌ Data kosong, file tidak dibuat")
+            console.print(
+                Panel(f"File tidak berhasil dibuat:\n{filename}", title="❌ Gagal Menyimpan", border_style="red")
+            )
 
     except Exception as e:
-        print(f"❌ Terjadi kesalahan: {e}")
+        console.print(Panel(str(e), title="❌ Terjadi Kesalahan", border_style="red"))
         import traceback
         traceback.print_exc()
 
     finally:
-        print("\n🟢 Browser tetap terbuka untuk pemeriksaan manual.")
-        print("💡 Tips debugging:")
-        print("  1. Cek apakah halaman web berisi tabel data")
-        print("  2. Inspect element untuk melihat struktur HTML tabel")
-        print("  3. Pastikan tanggal memiliki data")
-        print("  4. Cek console browser untuk error JavaScript")
-        print("  5. Periksa format angka di Excel apakah sesuai dengan web")
+        console.print("\n[dim]🟢 Browser tetap terbuka untuk pemeriksaan manual.[/dim]")
 
 
 if __name__ == "__main__":
