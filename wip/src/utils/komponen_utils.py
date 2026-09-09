@@ -27,7 +27,7 @@ def create_driver():
 
 
 def login(driver):
-    console.print("[bold cyan]🔐 Login ke sistem...[/bold cyan]")
+    console.print("[dim]› Logging in...[/dim]")
     driver.get(WEB_URL)
     time.sleep(2)
 
@@ -36,9 +36,11 @@ def login(driver):
         driver.find_element(By.NAME, "password").send_keys(PASSWORD)
         driver.find_element(By.TAG_NAME, "form").submit()
         time.sleep(2)
-        console.print("[bold green]✅ Login berhasil.[/bold green]\n")
+        console.print("[green]✓[/green] Logged in")
+        console.print()
     except Exception as e:
-        console.print(f"[bold red]❌ Gagal login: {e}[/bold red]")
+        console.print("[red]✗[/red] Login failed")
+        console.print(f"[dim]  {e}[/dim]")
         raise
 
 
@@ -69,7 +71,7 @@ def highlight_rows(driver, rows, duration=1.5):
             rows,
         )
     except Exception as e:
-        print(f"⚠️ Gagal highlight rows: {e}")
+        console.print(f"[dim]  (skip) highlight failed: {e}[/dim]")
 
 
 def extract_table_data(driver):
@@ -113,7 +115,7 @@ def extract_table_data(driver):
         return data
 
     except Exception as e:
-        console.print(f"[red]❌ Gagal ekstrak data: {e}[/red]")
+        console.print(f"[red]✗[/red] [dim]Failed to extract data: {e}[/dim]")
         return []
 
 
@@ -122,7 +124,8 @@ def collect_data(driver, urls_dict, jenis):
     original_tab = driver.current_window_handle
     total_bagian = len(urls_dict)
 
-    console.print(f"[bold]🚀 Mengumpulkan data {jenis}[/bold] — {total_bagian} bagian\n")
+    console.print(f"[bold white]{jenis}[/bold white] [dim]· {total_bagian} sections[/dim]")
+    console.print()
 
     for i, (bagian, url) in enumerate(urls_dict.items()):
         if i == 0:
@@ -137,10 +140,10 @@ def collect_data(driver, urls_dict, jenis):
         try:
             time.sleep(1)
             if "error" in driver.page_source.lower() or "404" in driver.title:
-                console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [yellow]⚠️ halaman error[/yellow]")
+                console.print(f"  [yellow]‼[/yellow] {bagian:<20} [dim]page error[/dim]")
                 continue
-        except Exception as e:
-            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [red]⚠️ gagal memuat halaman[/red]")
+        except Exception:
+            console.print(f"  [red]✗[/red] {bagian:<20} [dim]failed to load[/dim]")
             continue
 
         data = extract_table_data(driver)
@@ -148,17 +151,18 @@ def collect_data(driver, urls_dict, jenis):
         if data:
             for row in data:
                 all_data.append([bagian] + row)
-            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [green]✅ {len(data)} baris[/green]")
+            console.print(f"  [green]✓[/green] {bagian:<20} [dim]{len(data)} rows[/dim]")
         else:
-            console.print(rf"[dim][{i+1:>2}/{total_bagian}][/dim] {bagian:<20} [dim]— tidak ada data[/dim]")
+            console.print(f"  [dim]·[/dim] [dim]{bagian:<20} no data[/dim]")
 
     driver.switch_to.window(original_tab)
     console.print()
 
     if all_data:
-        console.print(f"[bold green]🎯 Total data {jenis} terkumpul: {len(all_data)} baris[/bold green]")
+        console.print(f"[dim]total[/dim]  [bold]{len(all_data)}[/bold] rows")
     else:
-        console.print(f"[yellow]🎯 Tidak ada data {jenis} yang terkumpul[/yellow]")
+        console.print(f"[dim]no data collected for {jenis}[/dim]")
+    console.print()
 
     return all_data
 
@@ -190,9 +194,7 @@ def generate_urls(base_path, tanggal):
 
 def get_tanggal_input():
     """Meminta input tanggal dari user, default ke hari ini"""
-    input_tanggal = input(
-        "📅 Masukkan tanggal (format: YYYY-MM-DD) [default: hari ini]: "
-    ).strip()
+    input_tanggal = input("date (YYYY-MM-DD, default: today) › ").strip()
     if input_tanggal == "":
         input_tanggal = datetime.today().strftime("%Y-%m-%d")
     return input_tanggal
