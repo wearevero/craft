@@ -1,0 +1,17 @@
+# Di Windows, Just default-nya memakai sh; ganti ke PowerShell
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+default: run
+
+filling date="":
+    npx tsx src/index.ts filling {{date}}
+
+komponen date="":
+    npx tsx src/index.ts komponen {{date}}
+
+loss date="":
+    npx tsx src/index.ts loss {{date}}
+
+# just run            -> tanya tanggal per laporan
+# just run 2025-01-31 -> semua laporan untuk tanggal itu
+run date="": (filling date) (komponen date) (loss date)

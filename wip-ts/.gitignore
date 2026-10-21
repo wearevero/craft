@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+
+# Kredensial: jangan pernah di-commit (berisi email & password sistem)
+.env
+.env.*
+!.env.example
+
+# Hasil build
+dist/
+
+# Browser & driver lokal (ukurannya besar dan bisa diunduh ulang)
+driver/
+browser/
+
+# Hasil scraping
+*.xlsx
+*.xls
+output/
+
+# Log
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Excel temporary files
+~$*

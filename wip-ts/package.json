@@ -1,0 +1,22 @@
+{
+  "name": "wip-ts",
+  "private": true,
+  "scripts": {
+    "filling": "tsx src/index.ts filling",
+    "komponen": "tsx src/index.ts komponen",
+    "loss": "tsx src/index.ts loss",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "exceljs": "^4.4.0",
+    "picocolors": "^1.1.1",
+    "puppeteer-core": "^25.15.0"
+  }
+}
